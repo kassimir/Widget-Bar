@@ -1,0 +1,49 @@
+WatchRedditMessages:
+  redditError := ""
+
+  if (InitialCheck < 21)
+    InitialCheck++
+  else {
+      redditError := wbReddit.document.querySelector(".user")
+      if (redditError = "") {
+        GuiControl,, Reddit, %A_ScriptDir%\Widgets\reddit\redditerror.png
+        wbReddit.navigate("http://www.reddit.com")
+        return
+      }
+  }
+  redditMessages := ""
+  redditMessages := wbReddit.document.querySelector(".havemail")
+  if (redditMessages != "")
+  {
+    GuiControl,, Reddit, %A_ScriptDir%\Widgets\reddit\redditnew.png
+    num := wbReddit.document.querySelector(".message-count").textContent
+    GuiControl, Move, NumberOfMessages, w12 h12
+    GuiControl,, NumberOfMessages, % num
+  }  else {
+    GuiControl,, Reddit, %A_ScriptDir%\Widgets\reddit\reddit.png
+    GuiControl, Move, NumberOfMessages, w0 h0
+    GuiControl,, NumberOfMessages,
+  }
+  if (InitialCheck = 20)
+    SetTimer, WatchRedditMessages, 60000
+  if (InitialCheck = 21)
+    wbReddit.navigate("http://www.reddit.com")
+Return
+
+CheckRedditMessages:
+  wbReddit.navigate("http://www.reddit.com")
+
+  GuiControl,, Reddit, %A_ScriptDir%\Widgets\reddit\reddit.png
+  GuiControl, Move, NumberOfMessages, w0 h0 -Border
+  GuiControl,, NumberOfMessages,
+  Run, C:\Users\chris.stanley\AppData\Local\Vivaldi\Application\vivaldi.exe https://www.reddit.com/message/inbox/
+Return
+
+ShowReddit:
+  wbReddit.visible := !wbReddit.visible
+  Menu, RClick, Rename, % !wbPandora.visible ? "Hide Reddit" : "Show Reddit", % wbPandora.visible ? "Hide Reddit" : "Show Reddit"
+Return
+
+QuitReddit:
+  wbReddit.quit()
+Return

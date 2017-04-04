@@ -1,0 +1,8 @@
+ComObjError(false)
+
+wbGmail := ComObjCreate("InternetExplorer.Application")
+wbGmail.visible := true
+wbGmail.navigate("http://www.gmail.com")
+
+InitialGmailCheck := 0
+SetTimer, WatchGmail, 2000

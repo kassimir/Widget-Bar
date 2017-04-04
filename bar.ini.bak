@@ -1,0 +1,12 @@
+[settings]
+trans=150
+
+[widgetsleft]
+1="Pandora"
+2="Youtube"
+3="Prime Music"
+
+[widgetLabelsleft]
+1=Pandora
+2=Youtube
+3=PrimeMusic
