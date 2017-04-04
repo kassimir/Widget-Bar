@@ -1,7 +1,0 @@
-ComObjError(false)
-
-wbReddit := ComObjCreate("InternetExplorer.Application")
-wbReddit.visible := false
-wbReddit.navigate("http://www.reddit.com")
-
-SetTimer, WatchRedditMessages, 2000
