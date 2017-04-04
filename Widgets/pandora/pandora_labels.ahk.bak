@@ -14,7 +14,7 @@ Pandora:
   iconLoc = %A_ScriptDir%\Widgets\pandora\images
   
   ;; Set up Menu items
-  Menu, RClick, Add, Show Pandora, ShowIE
+  Menu, RClick, Add, Show IE, ShowIE
 
   GuiControl,, CurrentLeft, %A_ScriptDir%\Widgets\pandora\pandora.png
 

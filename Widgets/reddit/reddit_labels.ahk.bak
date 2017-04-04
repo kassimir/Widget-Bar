@@ -43,7 +43,7 @@ Return
 
 ShowReddit:
   wbReddit.visible := !wbReddit.visible
-  Menu, RClick, Rename, % !wbReddit.visible ? "Hide Reddit" : "Show Reddit", % wbReddit.visible ? "Hide Reddit" : "Show Reddit"
+  Menu, RClick, Rename, % wbReddit.visible ? "Hide Reddit" : "Show Reddit", % !wbReddit.visible ? "Hide Reddit" : "Show Reddit"
 Return
 
 QuitReddit:
