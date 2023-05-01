@@ -11,10 +11,41 @@
 CoordMode, Mouse, Screen
 ; Used for various things that rely on Window Title
 SetTitleMatchMode, 2
+; Turn on AutoMousey to make sure my computer never sleeps
+SetTimer, AutoMousey, 240000
+DetectHiddenWindows, On
+WinShow, ahk_exe vivaldi.exe
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                         CONSTANTS                        ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Used for AutoMousey... it checks the position of the mouse
+; every 4 minutes, then turns it on, if the mouse hasn't moved
+global MouseGetPos, MOUSEPOSX, MOUSEPOSY
+global MIN_WINDOW_TRANS := 100
+return
 
-clicker := false
-interactor := false
-zchester := false
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                          SANDBOX                         ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; This area is specifically for creating new scripts
+closeTab := 0
+^+F7::
+closeTab := 1
++F7::
+  getWin()
+  Send ^l
+  Sleep 50
+  Send ^c
+  if (closeTab) {
+    Send ^{F4}
+    closeTab := 0
+  }
+  command = "cd C:\Users\uscstanl\WebstormProjects\minimal-reader\ & npm run start --url=%Clipboard%"
+  Run, %ComSpec% /c %command%
+  WinWait, ahk_exe cmd.exe
+  WinHide, ahk_exe cmd.exe
+return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;               GROUP - NO FOREIGN CHARACTERS              ;
@@ -23,37 +54,58 @@ zchester := false
 ; hotkeys I've got, because then they can fuck stuff up or they
 ; can impede other hotkeys from firing
 ; Guild Wars
-GroupAdd, EnglishOnly, Guild Wars
-; Guild Wars 2
-;GroudAdd, EnglishOnly, ahk_exe Gw2-64.exe
-; Morrowind
-GroupAdd, EnglishOnly, ahk_exe Morrowind.exe
+GroupAdd, EnglishOnly, ahk_exe Gw.exe
 ; SciTE4AutoHotkey
 GroupAdd, EnglishOnly, ahk_exe SciTE.exe
 ; SF Fed Timesheet
 GroupAdd, EnglishOnly, Welcome to AccelerationVMS
-; Wizard101
-GroupAdd, EnglishOnly, Wizard101 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                     GUILD WARS LOGINS                    ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Main account
-::gwc::gw@chris.im{tab}Lawliet13{enter}
-; Middy
-::gwm::middy@chris.im{tab}Lawliet13{enter}
-; Rory's account
-::gwr::roryliberty@gmail.com{tab}kcitsmoob{enter}
-
-return
-
-::lpr::https://www.linkedin.com/in/cstanmo/
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                       RELOAD SCRIPT                      ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 !space::reload
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                          LOGINS                          ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Set up clicking functionality
+^+LButton::
+  ; wait
+  wait := 0
+  ; Get Windwo Title
+  WinGetTitle, title, A
+  ; Set user/pass in accordance with title
+  switch title
+  {
+    Case "Login - Vivaldi":
+      user := "chris_stanley@waters.com"
+      pwd := "Horse! and buggy?"
+      enter := 0
+      tab := 1
+      wait := 0
+    Case "Git Bash":
+      user := "uscstanl"
+      pwd := "Horse! and buggy?"
+      enter := 1
+      tab := 0
+      wait := 1000
+    Default:
+      user := "uscstanl"
+      pwd := "Horse! and buggy?"
+      enter := 0
+      tab := 1
+      wait := 0
+  }
+  Sleep 500
+  SendRaw %user%
+  if (enter)
+    Send {enter}
+  if (tab)
+    Send {tab}
+  Sleep %wait%
+  SendRaw %pwd%
+  Send {enter}
+return
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                          ;
 ;                       MOUSE BUTTONS                      ;
@@ -74,7 +126,7 @@ return
   MouseGetPos, mousestartX, mousestartY, mousewin
   ; Activate window
   WinActivate, ahk_id %mousewin%
-  ; Get Window position  
+  ; Get Window position
   WinGetPos, winstartX, winstartY,,, ahk_id %mousewin%
   ; Watch the mouse move, and follow it with the window
   Loop
@@ -109,7 +161,7 @@ return
   MouseGetPos, mousestartX, mousestartY, mousewin
   ; Activate window
   WinActivate, ahk_id %mousewin%
-  ; Get Window position  
+  ; Get Window position
   WinGetPos,,, winstartW, winstartH, ahk_id %mousewin%
   ; Watch the mouse move, and follow it with the window
   Loop
@@ -131,13 +183,13 @@ return
     ; Move the window
     WinMove, ahk_id %mousewin%,,,, %newwindowW%, %newwindowH%
     ; Set the old starting coordinates to the new coordinates
-  }  
+  }
 return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                3 - MAXIMIZE/RESTORE WINDOW               ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 
+;
 +F3::
   getWin()
   WinGet, mm, MinMax, A
@@ -155,10 +207,105 @@ return
   Send, {LCtrl Down}{F4}{LCtrl Up}
 return
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                       6 - MINIMIZE                       ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 +F6::
   getWin()
   WinMinimize, A
+return
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                 11 - WINDOW TRANSPARENCY                 ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; This will trigger the ability to change a window's
+; transparency by using the Scroll Wheel but only for
+; a certain amount of time. Min transparency is 150
+; TODO: Gui for displaying Trans Value
+
+; Toggle for mouse wheel
+setWindowTrans := false
+; Mouse button actually only turns on the trans ability
+; And also sets timer to turn it off
++F11::
+  ; Turn on trans
+  setWindowTrans := true
+  ; Begin turn off timer
+  SetTimer, TurnOffTrans, 2000
+return
+
+; Set up hotkey for trans
+WheelDown::
+  ; If trans isn't activated
+  if (!setWindowTrans) {
+    ; Send mouse wheel
+    Send, {WheelDown}
+    ; And return
+    return
+  }
+  ; Call window trans function
+  setTransVal("down")
+return
+
+; Set up hotkey for trans
+WheelUp::
+  ; If trans isn't activated
+  if (!setWindowTrans) {
+    ; Send Wheel Up
+    Send, {WheelUp}
+    ; And return
+    return
+  }
+  ; Call window trans function
+  setTransVal("up")
+return
+
+; Function that does the trans work
+setTransVal(direction)
+{
+  ; Get window
+  win := getWin()
+  ; Get window trans value
+  WinGet, winTransVal, Transparent, ahk_id %win%
+  ; If wheel up, add to trans
+  if (direction = "up")
+    winTransVal += 15
+  ; Otherwise, subtract from trans
+  else
+    winTransVal -= 15
+  ; If it's less than CONSTANT
+  if (winTransVal < MIN_WINDOW_TRANS)
+    ; Set to CONSTANT
+    winTransVal := MIN_WINDOW_TRANS
+  ; If it's more than maximum amount
+  if (winTransVal > 255)
+    ; Set it to maximum amount (Side note: Windows won't allow
+    ; trans to go higher than 255, so this isn't necessary, but
+    ; I like error-handling
+    winTransVal = 255
+  ; Set window trans to new value
+  WinSet, Transparent, %winTransVal%, ahk_id %win%
+  ; Display trans in Tooltip {
+  ToolTip, Transparency: %winTransVal%
+  ; Set timer to turn off functionality (shorter than original)
+  SetTimer, TurnOffTrans, 750
+}
+
+; Label/Timer to turn off trans functionality
+TurnOffTrans:
+  ; Turn off trans functionality
+  setWindowTrans := false
+  ; Reset default trans direction
+  transDirection := "up"
+  ; Turn off Tooltip
+  ToolTip
+return
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                 12 - ALLOW CLICK-THROUGH                 ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
++F12::
+  WinSet, ExStyle, ^0x20, A
 return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -178,6 +325,15 @@ return
   WinClose, ahk_id %win%
 return
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;             SET SPECIFIC WINDOW TRANSPARENCY             ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+^+F11::
+  win := getWin()
+  InputBox, trans, Set Window Transparency Level, Please choose transparency,, 220, 130,,,,, 255
+  WinSet, Transparent, %trans%, ahk_id %win%
+return
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                          ;
@@ -190,19 +346,19 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; WHEN TOGGLING ON, UPDATES NAME TO 'ALWAYS ON TOP -'
 ; REMOVES THAT WHEN TOGGLING OFF
-; NOTE: THIS SOMETIMES ONLY EFFECTS THE TASKBAR BUTTON 
+; NOTE: THIS SOMETIMES ONLY EFFECTS THE TASKBAR BUTTON
 ; AND NOT THE WINDOW ITSELF
 ^!LButton::
   ; Get window under mouse
-  MouseGetPos, x, y, win    
+  MouseGetPos, x, y, win
   ; Activate window
   WinActivate, ahk_id %win%
   ; Toggle Always On Top
-  WinSet, AlwaysOnTop, Toggle, A    
+  WinSet, AlwaysOnTop, Toggle, A
   ; Get window title
-  WinGetActiveTitle, WinTitle  
+  WinGetActiveTitle, WinTitle
   ; Check Window title for "ALWAYS ON TOP - "
-  TitleCheck := SubStr(WinTitle, 1, 16)  
+  TitleCheck := SubStr(WinTitle, 1, 16)
   ; If it's there, remove it
   if (TitleCheck = "ALWAYS ON TOP - ") {
     ; Create new string sans "ALWAYS ON TOP - "
@@ -211,11 +367,11 @@ return
     WinSetTitle, A,, %NewTitle%
   } else {
     ; Check Always On Top status of window
-    WinGet, ExStyle, ExStyle, A    
+    WinGet, ExStyle, ExStyle, A
     ; If Always On Top
     if (ExStyle & 0x8)
       ; Set window title to have "ALWAYS ON TOP - "
-      WinSetTitle, A,, ALWAYS ON TOP - %WinTitle%    
+      WinSetTitle, A,, ALWAYS ON TOP - %WinTitle%
   }
 return
 
@@ -233,9 +389,29 @@ trans := 0
 +^F8::
 trans := 255
 ^F8::
-  trans := trans ? trans : 175
+  trans := trans ? trans : 155
   ; Find number of monitors
   SysGet, monNum, MonitorCount
+  ; If it's just one, return
+  if (monNum = 1)
+    return
+  ; Otherwise get first monitor information
+  SysGet, mon, Monitor, 1
+  ; Figure out its width
+  width := monRight - monLeft
+  ; Just in case it's ever a negative number
+  if (width < 0)
+    ; Convert to positive one!
+    width := width * -1
+  ; Figure out its height
+  height := monTop - monBottom
+  ; Just in case it's ever a negative number
+  if (height < 0)
+    ; Convert to a positive one!
+    height := height * -1
+  ; Call function to build a gui for that specific monitor
+  buildGui(monLeft, monTop, width, height, trans)
+  /*
   ; Loop through them
   Loop, % monNum
   {
@@ -244,7 +420,7 @@ trans := 255
     ; Figure out its width
     width := monRight - monLeft
     ; Just in case it's ever a negative number
-    if (width < 0) 
+    if (width < 0)
       ; Convert to positive one!
       width := width * -1
     ; Figure out its height
@@ -256,62 +432,68 @@ trans := 255
     ; Call function to build a gui for that specific monitor
     buildGui(monLeft, monTop, width, height, A_Index, trans)
   }
+  */
 return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                  SCREEN SHADER (DESTROY)                 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ^F9::
-  IfWinActive, Guild Wars 
+  IfWinActive, Guild Wars
   {
     SendInput, {F9}
     return
   }
   ; Find number of monitors
   SysGet, monNum, MonitorCount
-  ; Loop through them
-  Loop, % monNum
-  {
-    ; Create name that correlates to gui creation
-    gname := "gui" A_Index
-    ; Destroy it
-    Gui, %gname%:Destroy
-  }
+  if (monNum =1 )
+    return
+  Gui, screengui:Destroy
   trans := 0
 return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                       WINDOW RESET                       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; WITH ALL MY MONITOR MOVING AROUND, SOMETIMES WINDOWS 
+; WITH ALL MY MONITOR MOVING AROUND, SOMETIMES WINDOWS
 ; WANDER OFF INTO THE NETHER, SO THIS SCRIPT MOVES IT BACK
-; TO THE CORNER OF THE MAIN MONITOR... 
+; TO THE CORNER OF THE MAIN MONITOR...
 ; NOTE: WINDOW MUST BE THE ACTIVE WINDOW TO WORK
-;^0::
-;^Numpad0::
-;  WinGet, id, ID, A
-;  WinMove, ahk_id %id%,, 0, 0
-;  WinSet, Transparent, 255, A
-;return
-;^1::
-;^Numpad1::
-;  WinGet, id, ID, A
-;  WinMove, ahk_id %id%,, 3841, 0
-;  WinSet, Transparent, 255, A
-;return
-^5::
+
+; Moves to upper-left of Monitor 1
+^Numpad0::
+  id := getWin()
+  SysGet, mon, Monitor, 1
+  WinMove, ahk_id %id%,, %monLeft%, %monTop%
+  WinSet, Transparent, 255, A
+  WinSet, ExStyle, -0x20, ahk_id %id%
+return
+
+; Moves to upper-left of Monitor 2
+^Numpad1::
+  id := getWin()
+  SysGet, mon, Monitor, 2
+  WinMove, ahk_id %id%,, %monLeft%, %monTop%
+  WinSet, Transparent, 255, A
+  WinSet, ExStyle, -0x20, ahk_id %id%
+return
+
+; Moves upper-left corner of window to the cuurent mouse position
 ^Numpad5::
   MouseGetPos, mx, my
   WinGet, id, ID, A
   WinMove, ahk_id %id%,, %mx%, %my%
-  WinSet, Transparent, 255, A
+  WInSet, Transparent, 255, A
+  WinSet, ExStyle, -0x20, ahk_id %id%
 return
-  
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                        WINDOW INFO                       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DISPLAY INFORMATION FROM A WINDOW:
 ;   TITLE
+;   Exe
 ;   X (POSITION)
 ;   Y (POSITION)
 ;   WIDTH
@@ -322,33 +504,10 @@ return
   WinGet, wid, ID, A
   WinGetPos, wx, wy, ww, wh, ahk_id %wid%
   WinGetTitle, title, ahk_id %wid%
+  WinGet, prn, ProcessName, ahk_id %wid%
   WinGet, wt, Transparent, ahk_id %wid%
-  MsgBox, 0, %title%, % "PID: " wpid "`nID: " wid "`nx: " wx "`ny: " wy "`nwidth: " ww "`nheight: " wh "`nTrans: " wt
+  MsgBox, 0, %title%, % "Exe: " prn "`nPID: " wpid "`nID: " wid "`nx: " wx "`ny: " wy "`nwidth: " ww "`nheight: " wh "`nTrans: " wt
 return
-
-; GINA GET DAT BITCH
-; 501.831.9014
-;~ ^Numpad2::
-  ;~ WinGet, ctrls, ControlList, A
-  ;~ MsgBox, Ok
-  ;~ Loop, Parse, ctrls, `n
-  ;~ {
-    ;~ MsgBox, 4,, Control #%A_Index% is "%A_LoopField%". Continue?
-    ;~ IfMsgBox, No
-      ;~ break
-  ;~ }
-;~ return
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                REMOVE APPLICATION CONTROL                ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; WINDOWS + RIGHT CLICK WILL HIDE A CONTROL ON AN APPLICATION
-; BE VERY CAREFUL, BECAUSE THIS IS A VERY POWERFUL FEATURE
-;#RButton::
-;  MouseGetPos, ,, win, ctrl
-;  Control, Hide,, %ctrl%, ahk_id %win%
-;  MsgBox, % "win: " win "`nctrl: " ctrl " removed"  
-;return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                         POLYGLOT                         ;
@@ -358,43 +517,68 @@ return
 ; Also defaults to first option if anything other than another
 ; number is chosen.
 
-#IfWinNotActive, ahk_group EnglishOnly
+;#IfWinNotActive, ahk_group EnglishOnly
 
-:?*:a::
-  switchFn(["Á", "À", "Â", "Ä"], ["á", "à", "â", "ä"], ["A", "a"])
-return
+;:?*:a::
+;  switchFn(["Á", "À", "Â", "Ä"], ["á", "à", "â", "ä"], ["A", "a"])
+;return
 
-:?*:c::
-  switchFn(["Ç"], ["ç"], ["C", "c"])
-return
+;:?*:c::
+;  switchFn(["Ç"], ["ç"], ["C", "c"])
+;return
 
-:?*:e::
-  switchFn(["É", "È", "Ê", "Ë"], ["é", "è", "ê", "ë"], ["E", "e"])
-return
+;:?*:e::
+;  switchFn(["É", "È", "Ê", "Ë"], ["é", "è", "ê", "ë"], ["E", "e"])
+;return
 
-:?*:i::
-  switchFn(["Í", "Ì", "Î", "Ï"], ["í", "ì", "î", "ï"], ["I", "i"])
-return
+;:?*:i::
+;  switchFn(["Í", "Ì", "Î", "Ï"], ["í", "ì", "î", "ï"], ["I", "i"])
+;return
 
-:?*:n::
-  switchFn(["Ñ"], ["ñ"], ["N", "n"])
-return
+;:?*:n::
+;  switchFn(["Ñ"], ["ñ"], ["N", "n"])
+;return
 
-:?*:o::
-  switchFn(["Ó", "Ò", "Ô", "Ö", "Œ"], ["ó", "ò", "ô", "ö", "œ"], ["O", "o"])
-return
+;:?*:o::
+;  switchFn(["Ó", "Ò", "Ô", "Ö", "Œ"], ["ó", "ò", "ô", "ö", "œ"], ["O", "o"])
+;return
 
-:?*:s::
-  switchFn(["ß"], ["ß"], ["S", "s"])
-return
+;:?*:s::
+;  switchFn(["ß"], ["ß"], ["S", "s"])
+;return
 
-:?*:u::
-  switchFn(["Ú", "Ù", "Û", "Ü"], ["ú", "ù", "û", "ü"], ["U", "u"])
+;:?*:u::
+;  switchFn(["Ú", "Ù", "Û", "Ü"], ["ú", "ù", "û", "ü"], ["U", "u"])
+;return
+
+;::madres::madre
+;:?*://?::¿
+;:?*://!::¡
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                          ;
+;                          LABELS                          ;
+;                                                          ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                        AUTOMOUSEY                        ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Checks mouse position every 4 minutes and "bumps" it,
+; if it hasn't moved. This keeps the computer from going
+; to sleep when I don't want it to
+AutoMousey:
+  MouseGetPos, x, y
+  if (x = MOUSEPOSX && y = MOUSEPOSY) {
+    newX := x + 1
+    newY := y + 1
+    MouseMove, %newX%, %newY%
+    alert("Bumped mouse")
+  } else {
+    MOUSEPOSX := x
+    MOUSEPOSY := y
+  }
 return
- 
-::madres::madre
-:?*://?::¿
-:?*://!::¡
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                          ;
@@ -416,12 +600,10 @@ return
 ;   width of gui
 ; h: number
 ;   height of gui
-; nm: number
-;   number to be added to name for window purpose
-buildGui(x, y, w, h, nm, t := 150)
+buildGui(x, y, w, h, t := 150)
 {
   ; Create unique name for gui
-  gname := "gui" nm
+  gname := "screengui"
   ; Set properties of gui:
   ;   +AlwaysOnTop speaks for itself
   ;   -Caption removes title bar
@@ -459,7 +641,7 @@ switchFn(upper, lower, dflt)
 {
   ; Check to see if we want to just send the normal key or the hotkey
   default := GetKeyState("/", "P") ? 0 : 1
-  
+
   ; Evaluate shift state
   shiftDown := GetKeyState("Shift", "P")
   ; Evaluate caps state
@@ -478,7 +660,7 @@ switchFn(upper, lower, dflt)
   else
     ; Set it accordingly
     sendUpper := 0
-  
+
   ; If we're to send it uppercase...
   if (sendUpper) {
     ; If we're sending normal key
@@ -506,20 +688,20 @@ switchFn(upper, lower, dflt)
       return
     } else if (lower.maxIndex() = 1) {
       ; Send that option
-      Send % "{backspace}" lower[1] 
+      Send % "{backspace}" lower[1]
       ; Leave function
       return
     }
     ; Otherwise, we don't capitalize
     opts := lower
   }
-  
+
   ; If we've decided we're going to be using the menu, then clear the variables
   ; Clear the Splashtext text
 	splashtext := ""
   ; Clear the height
-	splashheight := 0  
-  
+	splashheight := 0
+
 	; Start looping over the array to build text
 	Loop, % opts.maxIndex()
 	{
@@ -546,7 +728,7 @@ switchFn(upper, lower, dflt)
     s := opts[1]
   ; Send the 's' variable
   Send, %s%
-  ; The point in this is that if the input was NOT a number, 
+  ; The point in this is that if the input was NOT a number,
   ; then it's to continue typing, so this sends the input value
   if selection is not integer
     ; Send the input value
@@ -586,7 +768,7 @@ alert(msg := "ALERT!", options := false)
   if (mouse) {
     ; Get mouse position
     MouseGetPos, mx, my
-    ; Move alert message to the mouse position
+    ; Move window to the mouse
     WinMove, %title%,, %mx%, %my%
   }
   ; "i" means "infinite" meaning don't set to turn off SplashText
@@ -614,6 +796,9 @@ return
 ;                           SCITE                          ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #IfWinActive, SciTE4AutoHotkey
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;              CREATE NEW HEADER OR SUBHEADER              ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Set initial value
 subheader := 0
 ::newsubheader::
@@ -624,7 +809,7 @@ subheader := 0
   linelength := 60
   ; Length of spaces in the header
   spaceamount := 58
-  
+
   ; Get Scite's Position
   WinGetPos, wx, wy, ww, wh, SciTE4AutoHotkey
   ; Calculate coordinates for input box
@@ -649,7 +834,7 @@ subheader := 0
   if (!subheader)
     ; Add the extra block
     Send {;}{space %spaceAmount%}{;}{enter}
-  ; Send the title with it's mathematically-configured spaces
+  ; Send the title with its mathematically-configured spaces
   Send {;}{space %titlespace1%}%title%{space %titlespace2%}{;}{enter}
   ; If it's not a subheader...
   if (!subheader)
@@ -662,118 +847,24 @@ subheader := 0
 return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                            GW                            ;
+;                          VIVALDI                         ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-/*
-#IfWinActive, Guild Wars
-!1::
-  interactor := !interactor
-  if (interactor)
-    SetTimer, InteractLabel, 3000
-return
-
-!2::
-  clicker := !clicker
-  if (clicker) {
-    log("Starting Clicker")
-    SetTimer, ClickLabel, 250
-  }
-return
-
-!3::
-  CoordMode, Mouse, Screen
-
-  zchester := !zchester
-  if (zchester)
-    SetTimer, ZChestClicker, 5000
-  else
-    SetTimer, ZChestClicker, Off
-return
-
-lootCheck := 0
-
-!b::
-  active := "loot"
-
-  if !gwImg("zaishen")
-    active := "z"
-  else if !gwImg("gtob")
-    active := "g"
-  else if !gwImg("obby")
-    active := "o"
-MsgBox, % active
-return
-
-ZChestClicker:
-  SendRaw, '
-  active := "loot"
-  log("Active set to 'loot'")
-
-  if !gwImg("zaishen") {
-    active := "z"
-    log("Zaishen Chest active")
-  } else if !gwImg("temple") {
-    active := "g"
-    log("Great Temple of Balthazar active")
-  } else if !gwImg("obby") {
-    active := "o"
-    log("Obelisk Flag Stand active")
-  }
-
-  if (active = "loot") {
-    log("Loot still active. Collecting")
-    Send, {space}
-    Sleep, 1000
-    Send, {space}
-    Sleep, 1000
-    Send, {space}
-    SetTimer, ZChestClicker, 2000
-  }
-  
-  if (active = "g" || active = "o") {
-    log("Cycling selection")
-    SendRaw, '
-    SetTimer, ZChestClicker, 2000
-  }
-
-  if (active = "z") {
-    if (!lootCheck) {
-      log("Loot check failed. Setting true and cycling selection")
-      lootCheck := 1
-      SetTimer, ZChestClicker, 2000
-    } else {
-      log("Loot check successful. Opening Zaishen Chest and restarting label")
-      lootCheck := 0
-      Send, {space}
-      SetTimer, ZChestClicker, 2000
-    }
-  }
-return
-
-log(msg)
-{
-  msg := "`n" A_Hour ":" A_Min ":" A_Sec " - " msg
-  FileAppend, %msg%, C:\ahk\ahk.log
-}
-
-gwImg(img)
-{
-  img := "C:\ahk\" img ".png"
-  ImageSearch, FoundX, FoundY, 2200, 900, 2800, 1200, *30 %img%
-  return ErrorLevel
-}
+#IfWinActive, ahk_exe vivaldi.exe
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                   CONVERT TO BORDERLESS                  ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CURRENTLY DOESN'T LOAD ANGULAR :'(
+; This will grab the page url then minimize the current window
+; and load it up in a new borderless window
+;#LButton::
+;  KeyWait, LWin, L
+;  getWin()
+;  Send ^l
+;  Sleep, 50
+;  Send ^c
+;  WinMinimize, A
+;  Run, C:\Users\uscstanl\Documents\Neutron\Borderless.ahk %Clipboard%, C:\Users\uscstanl\Documents\Neutron\
+;return
 
 
-InteractLabel:
-  Send, {Space}
-  if !interactor
-    SetTimer, InteractLabel, Off
-return
 
-ClickLabel:
-  if WinActive("Guild Wars")
-    Click
-  if !clicker
-    SetTimer, ClickLabel, Off
-return
-*/
